@@ -44,14 +44,18 @@ class DnDUtility(Plugin):
     def unload(self, ctx):
         pickle.dump(self.user_attributes, open('user_attributes.pickle', 'wb'))
 
-    @Plugin.command('roll', '<amount:int> <value:int>')
-    def on_roll2_command(self, event, amount, value):
+    @Plugin.command('roll', '<amount:int> <value:int> [additions:int...]')
+    def on_roll2_command(self, event, amount, value, additions=[]):
+        #values = re.split(r'\W+', values)
         sum = 0
         for i in range(amount):
-            sum += random.randint(1, value)
+            sum += random.randint(1, int(value))
 
-        event.msg.reply('You\'ve rolled {0:,} with {1:,} d{2:,}.'.
-            format(sum, amount, value))
+        for elem in additions:
+            sum += elem
+
+        event.msg.reply('You\'ve rolled {0:,} with {1:,} d{2:,}, plus {3}.'.
+            format(sum, amount, value, additions))
 
     @Plugin.command('')
     def on__command(self, event):
@@ -101,3 +105,21 @@ class DnDUtility(Plugin):
     def on_removeattribute_command(self, event, attribute):
         self.user_attributes[str(event.msg.member.user.id)][attribute] = None
         pickle.dump(self.user_attributes, open('user_attributes.pickle', 'wb'))
+
+    @Plugin.command('rollmagic', '<rarity:str>')
+    def on_rollmagic_command(self, event, rarity):
+        pretty = {
+            'common':       'Common',
+            'uncommon':     'Uncommon',
+            'rare':         'Rare',
+            'veryrare':     'Very rare',
+            'legendary':    'Legendary'}
+        if rarity in pretty:
+            try:
+                items = pickle.load(open(rarity+'_magic.pickle', 'rb'))
+                event.msg.reply(items[random.randint(0, len(items) - 1)])
+            except:
+                event.msg.reply(pretty[rarity]+' magic items pickle not found.')
+        else:
+            event.msg.reply('Rarities: `common`, `uncommon`, `rare`, '+
+                '`veryrare`, `legendary`')
