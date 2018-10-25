@@ -1,10 +1,8 @@
-import time
 import random
 import re
 import pickle
 from disco.bot import Bot, Plugin
 from disco.types.message import MessageEmbed
-from datetime import time as dttime
 
 class MainUtility(Plugin):
     # Plugins provide an easy interface for listening to Discord events
@@ -44,12 +42,11 @@ class DnDUtility(Plugin):
     def unload(self, ctx):
         pickle.dump(self.user_attributes, open('user_attributes.pickle', 'wb'))
 
-    @Plugin.command('roll', '<amount:int> <value:int> [additions:int...]')
-    def on_roll2_command(self, event, amount, value, additions=[]):
-        #values = re.split(r'\W+', values)
+    @Plugin.command('roll', '[amount:int] [value:int] [additions:int...]')
+    def on_roll2_command(self, event, amount=1, value=20, additions=[]):
         sum = 0
         for i in range(amount):
-            sum += random.randint(1, int(value))
+            sum += random.randint(1, value)
 
         for elem in additions:
             sum += elem
@@ -57,32 +54,28 @@ class DnDUtility(Plugin):
         event.msg.reply('You\'ve rolled {0:,} with {1:,} d{2:,}, plus {3}.'.
             format(sum, amount, value, additions))
 
-    @Plugin.command('')
-    def on__command(self, event):
-        event.msg.reply('test.')
-
     @Plugin.command('initiative', '<content:str...>')
     def on_initiative_command(self, event, content):
         tokens = re.split(r'\W+', content)
-        order = list()
-        while tokens != list():
-            mx = max([int(x) for x in tokens[1:len(tokens):2]])
-            tiers = list()
-            while tokens.count(str(mx)) > 0:
-                #event.msg.reply('Tie detected: '+str(mx))
-                windex = tokens.index(str(mx))
-                tiers.append(tokens[windex - 1])
-                del tokens[windex]
-                del tokens[windex - 1]
-            order.append((tiers, mx))
+        order = dict()
+        pretty = '```\n'
 
-        event.msg.reply('Order, ties are grouped: '+str(order))
+        for character, initiative in zip(tokens[::2], tokens[1::2]):
+            if initiative not in order:
+                order[initiative] = list()
+            order[initiative].append(character)
+
+        for i in sorted(order.keys(), key=lambda s: int(s), reverse=True):
+            pretty += '{:>3}: {}\n'.format(i, order[i])
+
+        pretty += '```'
+        event.msg.reply(pretty)
 
     @Plugin.command('attribute', '<key:str> [value:str...]')
     def on_attribute_command(self, event, key, value=None):
         if value == None:
             try:
-                event.msg.reply(key+' = '+self.user_attributes[\
+                event.msg.reply(key + ' = ' + self.user_attributes[\
                     str(event.msg.member.user.id)][key])
             except:
                 event.msg.reply('That attribute does not exist.')
@@ -92,7 +85,7 @@ class DnDUtility(Plugin):
             except:
                 self.user_attributes[str(event.msg.member.user.id)] = dict()
                 self.user_attributes[str(event.msg.member.user.id)][key] = value
-            event.msg.reply(key+' = '+self.user_attributes[\
+            event.msg.reply(key + ' = ' + self.user_attributes[\
                 str(event.msg.member.user.id)][key])
         pickle.dump(self.user_attributes, open('user_attributes.pickle', 'wb'))
 
@@ -116,10 +109,11 @@ class DnDUtility(Plugin):
             'legendary':    'Legendary'}
         if rarity in pretty:
             try:
-                items = pickle.load(open(rarity+'_magic.pickle', 'rb'))
+                items = pickle.load(open(rarity + '_magic.pickle', 'rb'))
                 event.msg.reply(items[random.randint(0, len(items) - 1)])
             except:
-                event.msg.reply(pretty[rarity]+' magic items pickle not found.')
+                event.msg.reply(pretty[rarity] +
+                    ' magic items pickle not found.')
         else:
-            event.msg.reply('Rarities: `common`, `uncommon`, `rare`, '+
+            event.msg.reply('Rarities: `common`, `uncommon`, `rare`, ' +
                 '`veryrare`, `legendary`')
