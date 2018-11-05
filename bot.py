@@ -3,12 +3,24 @@ import re
 import pickle
 from disco.bot import Bot, Plugin
 from disco.types.message import MessageEmbed
+from datetime import datetime
 
 class MainUtility(Plugin):
     # Plugins provide an easy interface for listening to Discord events
     @Plugin.listen('ChannelCreate')
     def on_channel_create(self, event):
         event.channel.send_message('Woah, a new channel huh!')
+
+    @Plugin.command('about')
+    def on_about_command(self, event):
+        embed = MessageEmbed()
+        embed.set_author(name='MacDeth#0420',
+            url='https://github.com/MacDeth/discobot-py',
+            icon_url='https://macdeth.keybase.pub/avatar.png')
+        embed.title = 'About'
+        embed.url = 'https://github.com/MacDeth/discobot-py'
+
+        event.msg.reply(embed=embed)
 
     # They also provide an easy-to-use command component
     @Plugin.command('ping')
@@ -56,7 +68,16 @@ class DnDUtility(Plugin):
 
     @Plugin.command('initiative', '<content:str...>')
     def on_initiative_command(self, event, content):
-        tokens = re.split(r'\W+', content)
+        tokens = re.split(r'\s+', content)
+        dellist = []
+        for i in reversed(range(len(tokens) - 1)):
+            if tokens[i].isidentifier() and \
+                tokens[i + 1].replace(' ', '').isidentifier():
+                    tokens[i] += ' ' + tokens[i + 1]
+                    dellist.append(i + 1)
+        for n in dellist:
+            del tokens[n]
+
         order = dict()
         pretty = '```\n'
 
