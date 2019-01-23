@@ -57,14 +57,30 @@ class DnDUtility(Plugin):
     @Plugin.command('roll', '[amount:int] [value:int] [additions:int...]')
     def on_roll2_command(self, event, amount=1, value=20, additions=[]):
         sum = 0
+        crits = 0
+        fails = 0
+
         for i in range(amount):
-            sum += random.randint(1, value)
+            roll = random.randint(1, value)
+            if roll == value:
+                crits += 1
+            elif roll == 1:
+                fails += 1
+            sum += roll
 
         for elem in additions:
             sum += elem
 
         event.msg.reply('You\'ve rolled {0:,} with {1:,} d{2:,}, plus {3}.'.
             format(sum, amount, value, additions))
+        if crits > 0 or fails > 0:
+            event.msg.reply('Crits: {0:,}, Fails: {1:,}'.format(crits, fails))
+
+    @Plugin.command('8ball', '[query:str...]')
+    def on_8ball_command(self, event, query=''):
+        with open('8ball_messages.pickle', 'rb') as pickle_file:
+            replies = pickle.load(pickle_file)
+            event.msg.reply(replies[random.randint(0, len(replies) - 1)])
 
     @Plugin.command('initiative', '<content:str...>')
     def on_initiative_command(self, event, content):
